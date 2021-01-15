@@ -1,0 +1,32 @@
+{
+    "name": "abetter/mockup",
+    "description": "A Better Laravel Mockup toolkit, for exceptionally fast web applications.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Johan Sjöland",
+            "email": "johan@sjoland.com"
+        }
+    ],
+    "require": {
+		"abetter/core": "^1.0",
+		"fzaninotto/faker": "^1.9",
+		"glooby/pexels": "^0.1"
+	},
+	"autoload": {
+		"psr-4": {
+			"ABetter\\Mockup\\": "src/"
+		},
+		"files": [
+			"src/helpers.php"
+		]
+	},
+	"extra": {
+        "laravel": {
+            "providers": [
+                "ABetter\\Mockup\\ServiceProvider",
+				"ABetter\\Mockup\\BladeServiceProvider"
+            ]
+        }
+    }
+}
