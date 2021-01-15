@@ -10,8 +10,7 @@
     ],
     "require": {
 		"abetter/core": "^1.0",
-		"fzaninotto/faker": "^1.9",
-		"glooby/pexels": "^0.1"
+		"fzaninotto/faker": "^1.9"
 	},
 	"autoload": {
 		"psr-4": {
