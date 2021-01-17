@@ -3,9 +3,9 @@
 namespace ABetter\Mockup;
 
 use \Faker\Factory as Faker;
-use Illuminate\Database\Eloquent\Model AS BaseModel;
+//use Illuminate\Database\Eloquent\Model AS BaseModel;
 
-class Lipsum extends BaseModel {
+class Lipsum {
 
 	public static $faker;
 
@@ -13,6 +13,7 @@ class Lipsum extends BaseModel {
 		'format' => 'lipsum',
 		'faker' => NULL,
 		'type' => NULL,
+		'length' =>NULL,
 		'size' => 350,
 		'fraction' => 10,
 		'dot' => TRUE,
@@ -24,43 +25,37 @@ class Lipsum extends BaseModel {
 		'repeat' => NULL,
 	];
 
+	// ---
+
 	public static function get() {
-
 		$opt = self::options(func_get_args());
-
-		if ($opt['min'] === NULL) $opt['min'] = $opt['size'] - ($opt['size'] / $opt['fraction']);
-		if ($opt['max'] === NULL) $opt['max'] = $opt['size'] + ($opt['size'] / $opt['fraction']);
-
 		self::$faker = Faker::create();
-
 		$return = "";
-
 		switch ($opt['type']) {
-			case 'word' : $return .= self::format(ucfirst(self::$faker->word()),$opt); break;
-			case 'name' : $return .= self::format(self::$faker->name(),$opt); break;
+			case 'word' : $return = self::format(ucfirst(self::$faker->word()),$opt); break;
+			case 'name' : $return = self::format(self::$faker->name(),$opt); break;
 			case 'label' :
-			case 'link' : $return .= self::fake(array_merge($opt,['min'=>20,'max'=>25,'dot'=>FALSE])); break;
-			case 'menu' : $return .= self::fake(array_merge($opt,['min'=>15,'max'=>20,'dot'=>FALSE])); break;
-			case 'headline' : $return .= self::fake(array_merge($opt,['min'=>70,'max'=>100])); break;
+			case 'link' : $return = self::fake(array_merge($opt,['min'=>20,'max'=>25,'dot'=>FALSE])); break;
+			case 'menu' : $return = self::fake(array_merge($opt,['min'=>15,'max'=>20,'dot'=>FALSE])); break;
+			case 'headline' : $return = self::fake(array_merge($opt,['min'=>70,'max'=>100])); break;
 			case 'tiny' :
-			case 'line' : $return .= self::fake(array_merge($opt,['min'=>20,'max'=>25])); break;
-			case 'short' : $return .= self::fake(array_merge($opt,['min'=>30,'max'=>40])); break;
+			case 'line' : $return = self::fake(array_merge($opt,['min'=>20,'max'=>25])); break;
+			case 'short' : $return = self::fake(array_merge($opt,['min'=>30,'max'=>40])); break;
 			case 'lead' :
-			case 'medium' : $return .= self::fake(array_merge($opt,['min'=>250,'max'=>300])); break;
-			case 'long' : $return .= self::fake(array_merge($opt,['min'=>500,'max'=>600])); break;
-			case 'extra' : $return .= self::fake(array_merge($opt,['min'=>800,'max'=>900])); break;
+			case 'medium' : $return = self::fake(array_merge($opt,['min'=>250,'max'=>300])); break;
+			case 'long' : $return = self::fake(array_merge($opt,['min'=>500,'max'=>600])); break;
+			case 'extra' : $return = self::fake(array_merge($opt,['min'=>800,'max'=>900])); break;
 			case 'normal' :
-			default : $return .= self::fake(array_merge($opt,['min'=>300,'max'=>400]));
+			default : $return = self::fake(array_merge($opt,['min'=>300,'max'=>400]));
 		}
-
-		return (string) $return;
-
+		return (!empty($return)) ? (string) $return : "";
 	}
 
 	// ---
-	
+
 	public static function fake($opt=[]) {
-		$length = rand($opt['min'],$opt['max']);
+		$length = ($opt['length']) ? $opt['length'] : rand($opt['min'],$opt['max']);
+		if ($length < 5) $length = 5;
 		if ($opt['format'] == 'real') {
 			$line = self::$faker->realText($length);
 		} else {
@@ -68,6 +63,8 @@ class Lipsum extends BaseModel {
 		}
 		return self::format($line,$opt);
 	}
+
+	// ---
 
 	public static function format($line,$opt=[]) {
 		$line = self::cleanup($line,$opt);
@@ -86,9 +83,12 @@ class Lipsum extends BaseModel {
 	public static function options($args=[]) {
 		$opt = self::$default;
 		foreach ($args AS $arg) if (is_array($arg)) $opt = array_merge($opt,$arg);
-		if (is_numeric($args[0]??NULL)) $opt['size'] = (int) $args[0];
+		if (preg_match('/\:/',($args[0]??""))) $args = explode(':',$args[0]);
+		if (is_numeric($args[0]??NULL)) $opt['length'] = (int) $args[0];
 		if (is_string($args[0]??NULL)) $opt['type'] = $args[0];
 		if (is_string($args[1]??NULL)) $opt['tag'] = $args[1];
+		if ($opt['min'] === NULL) $opt['min'] = $opt['size'] - ($opt['size'] / $opt['fraction']);
+		if ($opt['max'] === NULL) $opt['max'] = $opt['size'] + ($opt['size'] / $opt['fraction']);
 		return $opt;
 	}
 
