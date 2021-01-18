@@ -68,7 +68,7 @@ class Pixsum {
 		$location .= '.color-'.ltrim($img['color'],'#');
 		$location .= '.'.$img['type'];
 		$ctx = stream_context_create(['http'=>['timeout'=>300]]);
-		if ($content = file_get_contents($img['src'],FALSE,$ctx)) {
+		if (!empty($img['src']) && ($content = @file_get_contents($img['src'],FALSE,$ctx))) {
 			@file_put_contents($location,$content);
 		} else {
 			$log = $opt['storage'].'/'.self::cachekey($opt).'.error';
