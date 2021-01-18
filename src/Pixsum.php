@@ -65,14 +65,17 @@ class Pixsum {
 		if (empty($opt['cache'])) return $img['src'];
 		$location = $opt['storage'].'/'.self::cachekey($opt);
 		$location .= '.'.$opt['source'].'-'.$img['id'];
-		$location .= '.'.ltrim($img['color'],'#');
+		$location .= '.color-'.ltrim($img['color'],'#');
 		$location .= '.'.$img['type'];
-		if ($content = @file_get_contents($img['src'])) {
+		$ctx = stream_context_create(['http'=>['timeout'=>300]]);
+		if ($content = file_get_contents($img['src'],FALSE,$ctx)) {
 			@file_put_contents($location,$content);
 		} else {
-			$location = $opt['storage'].'/'.self::cachekey($opt).'.error.txt';
+			$log = $opt['storage'].'/'.self::cachekey($opt).'.error';
 			$img['opt'] = $opt;
-			@file_put_contents($location,json_encode($img,JSON_PRETTY_PRINT));
+			$img['http_error'] = error_get_last();
+			@file_put_contents($log,json_encode($img,JSON_PRETTY_PRINT));
+			return FALSE;
 		}
 		return self::public($location);
 	}
@@ -96,8 +99,7 @@ class Pixsum {
 	}
 
 	public static function cachekey($opt=[]) {
-		$basename = md5(serialize($opt));
-		return $basename;
+		return md5(serialize($opt));
 	}
 
 	public static function public($location) {
@@ -126,12 +128,13 @@ class Pixsum {
 	}
 
 	public static function pexelsPhoto($id='',$img=[]) {
-		try { if ($res = json_decode(self::$pexels->get('photos/'.$id)->getBody())) {
+		try { if ($req = self::$pexels->get('photos/'.$id)) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->id ?? "";
 			$img['color'] = $res->avg_color ?? "";
-			$img['src'] = strtok($res->src->original ?? "",'?');
+			$img['src'] = $res->photos[0]->src->large2x ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
@@ -143,12 +146,13 @@ class Pixsum {
 		$query['per_page'] = 1;
 		$query['page'] = rand(1,$random);
 		$query['nocache'] = time();
-		try { if ($res = json_decode(self::$pexels->get('curated?'.http_build_query($query))->getBody())) {
+		try { if ($req = self::$pexels->get('curated?'.http_build_query($query))) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->photos[0]->id ?? "";
 			$img['color'] = $res->photos[0]->avg_color ?? "";
-			$img['src'] = strtok($res->photos[0]->src->original ?? "",'?');
+			$img['src'] = $res->photos[0]->src->large2x ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
@@ -161,12 +165,13 @@ class Pixsum {
 		$query['per_page'] = 1;
 		$query['page'] = 1;
 		$query['nocache'] = time();
-		try { if ($res = json_decode(self::$pexels->get('search?'.http_build_query($query))->getBody())) {
+		try { if ($req = self::$pexels->get('search?'.http_build_query($query))) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->photos[0]->id ?? "";
 			$img['color'] = $res->photos[0]->avg_color ?? "";
-			$img['src'] = strtok($res->photos[0]->src->original ?? "",'?');
+			$img['src'] = $res->photos[0]->src->large2x ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
@@ -190,18 +195,19 @@ class Pixsum {
 		} else if (!empty($opt['keywords'])) {
 			$img = self::unsplashSearch($opt['keywords'],$opt['orientation']);
 		} else {
-			$img = self::unsplashRandom(NULL,$opt['orientation']);
+			$img = self::unsplashRandom($opt['orientation']);
 		}
 		return $img;
 	}
 
 	public static function unsplashPhoto($id='',$img=[]) {
-		try { if ($res = json_decode(self::$unsplash->get('photos/'.$id)->getBody())) {
+		try { if ($req = self::$unsplash->get('photos/'.$id)) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->id ?? "";
 			$img['color'] = $res->color ?? "";
-			$img['src'] = strtok($res->urls->full ?? "",'?');
+			$img['src'] = $res->urls->full ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
@@ -211,12 +217,13 @@ class Pixsum {
 	public static function unsplashRandom($orientation='',$query=[],$img=[]) {
 		$query['orientation'] = $orientation;
 		$query['nocache'] = time();
-		try { if ($res = json_decode(self::$unsplash->get('photos/random?'.http_build_query($query))->getBody())) {
+		try { if ($req = self::$unsplash->get('photos/random?'.http_build_query($query))) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->id ?? "";
 			$img['color'] = $res->color ?? "";
-			$img['src'] = strtok($res->urls->full ?? "",'?');
+			$img['src'] = $res->urls->full ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
@@ -229,12 +236,13 @@ class Pixsum {
 		$query['per_page'] = 1;
 		$query['page'] = 1;
 		$query['nocache'] = time();
-		try { if ($res = json_decode(self::$unsplash->get('search/photos?'.http_build_query($query))->getBody())) {
+		try { if ($req = self::$unsplash->get('search/photos?'.http_build_query($query))) {
+			$res = json_decode($req->getBody());
 			$img['id'] = $res->results[0]->id ?? "";
 			$img['color'] = $res->results[0]->color ?? "";
-			$img['src'] = strtok($res->results[0]->urls->full ?? "",'?');
+			$img['src'] = $res->results[0]->urls->full ?? "";
 			$img['type'] = self::filetype($img['src']);
-			if (!$img['src']) $img['error'] = $res;
+			if (empty($img['src'])) $img['error'] = ['res'=>$res,'img'=>$img];
 		}} catch(Exception $e) {
 			$img['error'] = $e->getMessage();
 		}
