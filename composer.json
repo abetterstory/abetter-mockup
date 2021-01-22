@@ -10,7 +10,7 @@
     ],
     "require": {
 		"abetter/core": "^1.0",
-		"fzaninotto/faker": "^1.9"
+		"fakerphp/faker": "^1.9"
 	},
 	"autoload": {
 		"psr-4": {
